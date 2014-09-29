@@ -8,111 +8,7 @@
 #include <iostream>
 #include <string>
 
-
-
 using namespace std;
-
-
-
-template<typename TResult, typename ...TArgs>
-class YBuilder
-
-{
-
-private:
-
-    function<TResult(function<TResult(TArgs...)>, TArgs...)> partialLambda;
-
-
-
-public:
-
-    YBuilder(function<TResult(function<TResult(TArgs...)>, TArgs...)> _partialLambda)
-
-        :partialLambda(_partialLambda)
-
-    {
-
-    }
-
-
-
-    TResult operator()(TArgs ...args)const
-
-    {
-
-        return partialLambda(
-
-            [this](TArgs ...args)
-
-        {
-
-            return this->operator()(args...);
-
-        }, args...);
-
-    }
-
-};
-
-
-
-template<typename TMethod>
-struct PartialLambdaTypeRetriver
-
-{
-
-    typedef void FunctionType;
-
-    typedef void LambdaType;
-
-    typedef void YBuilderType;
-
-};
-
-
-
-template<typename TClass, typename TResult, typename ...TArgs>
-struct PartialLambdaTypeRetriver<TResult(__thiscall TClass::*)(function<TResult(TArgs...)>, TArgs...)>
-
-{
-
-    typedef TResult FunctionType(TArgs...);
-
-    typedef TResult LambdaType(function<TResult(TArgs...)>, TArgs...);
-
-    typedef YBuilder<TResult, TArgs...> YBuilderType;
-
-};
-
-
-
-template<typename TClass, typename TResult, typename ...TArgs>
-struct PartialLambdaTypeRetriver<TResult(__thiscall TClass::*)(function<TResult(TArgs...)>, TArgs...)const>
-
-{
-
-    typedef TResult FunctionType(TArgs...);
-
-    typedef TResult LambdaType(function<TResult(TArgs...)>, TArgs...);
-
-    typedef YBuilder<TResult, TArgs...> YBuilderType;
-
-};
-
-
-
-template<typename TLambda>
-function<typename PartialLambdaTypeRetriver<decltype(&TLambda::operator())>::FunctionType> Y(TLambda partialLambda)
-
-{
-
-    return typename PartialLambdaTypeRetriver<decltype(&TLambda::operator())>::YBuilderType(partialLambda);
-
-}
-
-
-
 
 
 
@@ -286,10 +182,23 @@ int _tmain(int argc, _TCHAR* argv[])
             : self(index - 1) + self(index - 2);
     });
 
-
     for (int i = 0; i < 10; i++)
     {
         cout << fib(i) << " ";
+    }
+    cout << endl;
+
+
+    auto fac = YC([](function<int(int)> self, int index)
+    {
+        return index < 2
+            ? 1
+            : index * self(index - 1);
+    });
+
+    for (int i = 0; i < 10; i++)
+    {
+        cout << fac(i) << " ";
     }
     cout << endl;
 
