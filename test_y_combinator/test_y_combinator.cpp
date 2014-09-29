@@ -20,8 +20,8 @@ auto Fact = [](int n)->int
 };
 
 
-template<typename TFunc, typename TRet>
-TRet FactMaker()
+template<typename TFunc, typename TInnerRet>
+TInnerRet FactMaker()
 {
     return [](TFunc procedure)
     {
@@ -44,8 +44,8 @@ TRet FactMaker()
 
 
 
-template<typename TFunc, typename TRet>
-TRet FactMaker2()
+template<typename TFunc, typename TInnerRet>
+TInnerRet FactMaker2()
 {
     return [](TFunc procedure)
     {
@@ -68,8 +68,8 @@ TRet FactMaker2()
 
 
 
-template<typename TFunc, typename TRet, typename TFuncInner>
-TRet FactMaker3()
+template<typename TFunc, typename TInnerRet, typename TFuncInner>
+TInnerRet FactMaker3()
 {
     return [](TFunc procedure)
     {
@@ -98,8 +98,8 @@ TRet FactMaker3()
 
 
 
-template<typename TFunc, typename TRet, typename TFuncInner, typename TFake>
-TRet FactMaker4()
+template<typename TFunc, typename TInnerRet, typename TFuncInner, typename TFake>
+TInnerRet FactMaker4()
 {
     return[](TFake fake)
     {
@@ -122,65 +122,59 @@ TRet FactMaker4()
 }
 
 
-template <typename TRet>
+template <typename TInnerRet>
 struct RecursiveFunc 
 {
-    function<TRet(RecursiveFunc)> o;
+    function<TInnerRet(RecursiveFunc)> o;
 };
 
-// template<typename TRet, template ...TArgs>
-// struct FuncTraits
-// {
-// 
-// };
-
-template<typename TFake, typename TRet = function<int(int)>>
-TRet YC(TFake x)
+template<typename TInnerRet, typename ...TArgs, typename TRet = function<TInnerRet(TArgs...)>>
+TRet YC2(function<TInnerRet(TRet, TArgs...)> x)
 {
-    using TFunc = RecursiveFunc<TRet>;
-    TFunc r = 
+    using TFunc = RecursiveFunc < TRet >;
+    TFunc r =
     {
         [=](TFunc procedure)
         {
-            return TRet([=](int arg)
+            return TRet([=](TArgs ...args)
             {
-                return x([=](int arg)
+                return x([=](TArgs ...args)
                 {
-                    return procedure.o(procedure)(arg);
-                }, arg);
+                    return procedure.o(procedure)(args...);
+                }, args...);
             });
         }
     };
 
     return r.o(r);
 }
+template<typename T>
+struct YcTypeTraits
+{
+};
 
+template<typename TInnerRet, typename TRet, typename ...TArgs>
+struct YcTypeTraits< function<TInnerRet(TRet, TArgs...)> >
+{
+    typedef function<TInnerRet(TArgs...)> TReturn;
+};
 
+template< typename TLambda, typename TRet = YcTypeTraits<decltype(&TLambda::operator())>::TReturn>
+TRet YC(TLambda x)
+{
+    return YC2<decltype(&TLambda::operator())>(x);
+}
 
 
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-//     auto fib = Y([](function<int(int)> self, int index)
-//     {
-//         return index < 2
-//             ? 1
-//             : self(index - 1) + self(index - 2);
-//     });
-// 
-// 
-//     for (int i = 0; i < 10; i++)
-//     {
-//         cout << fib(i) << " ";
-//     }
-//     cout << endl;
-
-    auto fib = YC([](function<int(int)> self, int index)
+    auto fib = YC2(function<int(function<int(int)>, int)>([](function<int(int)> self, int index)
     {
         return index < 2
             ? 1
             : self(index - 1) + self(index - 2);
-    });
+    }));
 
     for (int i = 0; i < 10; i++)
     {
@@ -204,4 +198,3 @@ int _tmain(int argc, _TCHAR* argv[])
 
     return 0;
 }
-
