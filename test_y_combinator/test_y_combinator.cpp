@@ -129,7 +129,7 @@ struct RecursiveFunc
 };
 
 template<typename TInnerRet, typename ...TArgs, typename TRet = function<TInnerRet(TArgs...)>>
-TRet YC2(function<TInnerRet(TRet, TArgs...)> x)
+TRet yc_impl(function<TInnerRet(TRet, TArgs...)> x)
 {
     using TFunc = RecursiveFunc < TRet >;
     TFunc r =
@@ -148,42 +148,57 @@ TRet YC2(function<TInnerRet(TRet, TArgs...)> x)
 
     return r.o(r);
 }
+
+
 template<typename T>
 struct YcTypeTraits
 {
+    typedef void TFunc;
+    typedef void TReturn;
 };
 
-template<typename TInnerRet, typename TRet, typename ...TArgs>
-struct YcTypeTraits< function<TInnerRet(TRet, TArgs...)> >
+template<typename TInnerRet, typename TClass, typename ...TArgs>
+struct YcTypeTraits< TInnerRet(TClass::*)(function<TInnerRet(TArgs...)>, TArgs...)const >
 {
+    typedef function<TInnerRet(function<TInnerRet(TArgs...)>, TArgs...)> TFunc;
     typedef function<TInnerRet(TArgs...)> TReturn;
 };
 
-template< typename TLambda, typename TRet = YcTypeTraits<decltype(&TLambda::operator())>::TReturn>
-TRet YC(TLambda x)
+template<typename TInnerRet, typename TClass, typename ...TArgs>
+struct YcTypeTraits < TInnerRet(TClass::*)(function<TInnerRet(TArgs...)>, TArgs...) >
 {
-    return YC2<decltype(&TLambda::operator())>(x);
+    typedef function<TInnerRet(function<TInnerRet(TArgs...)>, TArgs...)> TFunc;
+    typedef function<TInnerRet(TArgs...)> TReturn;
+};
+
+template<typename TLambda>
+using TraitsType = YcTypeTraits < decltype(&TLambda::operator()) > ;
+
+template<typename TLambda>
+typename TraitsType<TLambda>::TReturn yc(TLambda x)
+{
+    return yc_impl(TraitsType<TLambda>::TFunc(x));
 }
 
 
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-    auto fib = YC2(function<int(function<int(int)>, int)>([](function<int(int)> self, int index)
-    {
-        return index < 2
-            ? 1
-            : self(index - 1) + self(index - 2);
-    }));
+//     auto fib = yc_impl(function<int(function<int(int)>, int)>([](function<int(int)> self, int index)
+//     {
+//         return index < 2
+//             ? 1
+//             : self(index - 1) + self(index - 2);
+//     }));
+// 
+//     for (int i = 0; i < 10; i++)
+//     {
+//         cout << fib(i) << " ";
+//     }
+//     cout << endl;
 
-    for (int i = 0; i < 10; i++)
-    {
-        cout << fib(i) << " ";
-    }
-    cout << endl;
 
-
-    auto fac = YC([](function<int(int)> self, int index)
+    auto fac = yc([](function<int(int)> self, int index)
     {
         return index < 2
             ? 1
