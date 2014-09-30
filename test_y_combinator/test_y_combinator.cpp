@@ -184,18 +184,18 @@ typename TraitsType<TLambda>::TReturn yc(TLambda x)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-//     auto fib = yc_impl(function<int(function<int(int)>, int)>([](function<int(int)> self, int index)
-//     {
-//         return index < 2
-//             ? 1
-//             : self(index - 1) + self(index - 2);
-//     }));
-// 
-//     for (int i = 0; i < 10; i++)
-//     {
-//         cout << fib(i) << " ";
-//     }
-//     cout << endl;
+    auto fib = yc([](function<int(int)> self, int index)
+    {
+        return index < 2
+            ? 1
+            : self(index - 1) + self(index - 2);
+    });
+
+    for (int i = 0; i < 10; i++)
+    {
+        cout << fib(i) << " ";
+    }
+    cout << endl;
 
 
     auto fac = yc([](function<int(int)> self, int index)
@@ -210,6 +210,28 @@ int _tmain(int argc, _TCHAR* argv[])
         cout << fac(i) << " ";
     }
     cout << endl;
+
+
+    auto min = yc([](function<int(int, int)> self, int left, int right)
+    {
+        return left > 0 && right > 0
+            ? self(left - 1, right - 1) + 1
+            : 0;
+    });
+
+    cout << min(9, 5) << endl;
+    cout << min(5, 9) << endl;
+
+
+    auto min_triple = yc([](function<int(int, int, int)> self, int param1, int param2, int param3)
+    {
+        return param1 > 0 && param2 > 0 && param3 > 0
+            ? self(param1 - 1, param2 - 1, param3 - 1) + 1
+            : 0;
+    });
+
+    cout << min_triple(9, 5, 4) << endl;
+    cout << min_triple(5, 9, 4) << endl;
 
     return 0;
 }
